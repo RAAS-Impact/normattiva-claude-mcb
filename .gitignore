@@ -1,0 +1,15 @@
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Built extension bundle (distributed via GitHub Releases, not committed)
+*.mcpb
+*.dxt
+
+# Node
+node_modules/

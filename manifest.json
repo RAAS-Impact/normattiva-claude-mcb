@@ -1,0 +1,33 @@
+{
+  "manifest_version": "0.3",
+  "name": "normattiva",
+  "display_name": "Normattiva",
+  "version": "1.0.0",
+  "description": "Cerca e consulta la normativa italiana ufficiale tramite Normattiva (dati.normattiva.it).",
+  "long_description": "Collega Claude a Normattiva, il portale ufficiale della normativa italiana gestito dall'Istituto Poligrafico e Zecca dello Stato. Permette di cercare leggi, decreti e altri atti normativi, recuperarne il testo consolidato vigente, navigare articolo per articolo ed esportare collezioni di atti in bulk.",
+  "author": {
+    "name": "linucs",
+    "url": "https://github.com/linucs/fastmcp-normattiva"
+  },
+  "repository": { "type": "git", "url": "https://github.com/linucs/fastmcp-normattiva" },
+  "license": "MIT",
+  "keywords": ["normattiva", "legge", "diritto", "italia", "normativa", "legislation"],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"]
+    }
+  },
+  "tools_generated": true,
+  "privacy_policies": [
+    "https://www.normattiva.it/note-legali"
+  ],
+  "compatibility": {
+    "platforms": ["darwin", "win32"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
