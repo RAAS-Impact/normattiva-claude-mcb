@@ -262,6 +262,15 @@ function apiRequest(method, path, body) {
   });
 }
 
+// ─── Search Helpers ───────────────────────────────────────────────────────────
+
+// The Normattiva API returns 500 (not 400) when paginazione is omitted.
+// Always inject a safe default so callers never hit that crash.
+function withDefaultPaginazione(args) {
+  if (args.paginazione) return args;
+  return { ...args, paginazione: { paginaCorrente: 1, numeroElementiPerPagina: 10 } };
+}
+
 // ─── ELI Helpers ──────────────────────────────────────────────────────────────
 
 // Accepts either dataGU:"YYYY-MM-DD" or separate anno/mese/giorno fields.
@@ -282,10 +291,10 @@ async function callTool(name, args = {}) {
 
   switch (name) {
     case 'ricercaSemplice':
-      resp = await apiRequest('POST', '/api/v1/ricerca/semplice', args);
+      resp = await apiRequest('POST', '/api/v1/ricerca/semplice', withDefaultPaginazione(args));
       break;
     case 'ricercaAvanzata':
-      resp = await apiRequest('POST', '/api/v1/ricerca/avanzata', args);
+      resp = await apiRequest('POST', '/api/v1/ricerca/avanzata', withDefaultPaginazione(args));
       break;
     case 'ricercaAttiAggiornati':
       resp = await apiRequest('POST', '/api/v1/ricerca/aggiornati', args);

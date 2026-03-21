@@ -141,6 +141,23 @@ async function run() {
     assert(r.body.listaAtti[0].codiceRedazionale, 'codiceRedazionale missing from result');
   });
 
+  await test('ricercaAvanzata — denominazioneAtto requires paginazione (API bug: 500 without it)', async () => {
+    // Normattiva API bug: omitting paginazione causes 500 regardless of other params.
+    // The server injects { paginaCorrente: 1, numeroElementiPerPagina: 10 } as default.
+    // This test verifies: (a) raw API returns 500 without paginazione, (b) returns 200 with it.
+    const without = await apiRequest('POST', '/api/v1/ricerca/avanzata', {
+      denominazioneAtto: 'DECRETO LEGISLATIVO', numeroProvvedimento: 81, annoProvvedimento: 2008
+    });
+    assert(without.status === 500, `expected 500 without paginazione, got ${without.status}`);
+
+    const withPag = await apiRequest('POST', '/api/v1/ricerca/avanzata', {
+      denominazioneAtto: 'DECRETO LEGISLATIVO', numeroProvvedimento: 81, annoProvvedimento: 2008,
+      paginazione: { paginaCorrente: 1, numeroElementiPerPagina: 10 }
+    });
+    assertStatus(withPag);
+    assert(Array.isArray(withPag.body?.listaAtti), 'listaAtti not array');
+  });
+
   await test('ricercaAvanzata — D.Lgs. 81/2008 by number+year', async () => {
     const r = await apiRequest('POST', '/api/v1/ricerca/avanzata', {
       numeroProvvedimento: 81,

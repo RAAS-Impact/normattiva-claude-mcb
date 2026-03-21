@@ -1,0 +1,9 @@
+# Runtime dependencies — this project has none (pure Node.js built-ins only)
+node_modules/
+
+# Development & testing
+test.js
+
+# Documentation and specs (developer-only, not needed at runtime)
+docs/
+CHANGELOG.md

@@ -33,6 +33,8 @@ Use this for natural-language queries ("legge sulla privacy", "decreto sicurezza
 ### Filtered search → `ricercaAvanzata`
 Use when the user specifies structured criteria: act type (`classeProvvedimento`), date range (`dataInizioEmanazione` / `dataFineEmanazione`), act number (`numeroProvvedimento`), issuing body, etc. Before calling this, fetch valid filter values from the typological helpers below to avoid sending invalid codes.
 
+For `denominazioneAtto`, pass the `value` field from `tipologicaDenominazione` (e.g. `"DECRETO LEGISLATIVO"`), not the `label` code (e.g. `"PLL"`).
+
 ### Acts modified in a date range → `ricercaAttiAggiornati`
 Use this when the user asks "what laws changed between date A and date B". Requires `dataInizioAggiornamento` and `dataFineAggiornamento`. Returns paginated results like `ricercaSemplice`. For bulk export of these results, chain into the async workflow below.
 
