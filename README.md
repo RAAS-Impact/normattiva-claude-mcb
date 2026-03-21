@@ -14,7 +14,7 @@ Once installed, you can ask Claude things like:
 
 ### Option A — One-click (recommended)
 
-1. Download `normattiva.mcpb` from the [latest release](https://github.com/linucs/fastmcp-normattiva/releases/latest)
+1. Download `normattiva.mcpb` from the [latest release](https://github.com/RAAS-Impact/normattiva-claude-mcb/releases/latest)
 2. Double-click the file (or drag it into Claude Desktop → Settings → Extensions)
 3. Done — no terminal, no configuration needed
 
@@ -23,8 +23,8 @@ Once installed, you can ask Claude things like:
 ### Option B — From source
 
 ```bash
-git clone https://github.com/linucs/fastmcp-normattiva.git
-cd fastmcp-normattiva
+git clone https://github.com/RAAS-Impact/normattiva-claude-mcb.git
+cd normattiva-claude-mcb
 npm install -g @anthropic-ai/mcpb
 mcpb pack
 ```
