@@ -56,6 +56,7 @@ function apiRequest(method, path, body) {
   });
 }
 
+
 // ─── Runner ───────────────────────────────────────────────────────────────────
 
 let passed = 0, failed = 0;
@@ -210,6 +211,50 @@ async function run() {
     assertStatus(detail);
     assert(detail.body?.data?.atto?.articoloHtml, 'articoloHtml missing in detail');
   });
+
+  // ── ELI tools ─────────────────────────────────────────────────────────────
+
+  function resolveDate({ dataGU, anno, mese, giorno }) {
+    if (dataGU) {
+      const [y, m, d] = dataGU.split('-');
+      return [y, m.padStart(2, '0'), d.padStart(2, '0')];
+    }
+    return [String(anno), String(mese).padStart(2, '0'), String(giorno).padStart(2, '0')];
+  }
+  function buildEliUri({ codiceRedazionale, versione = 'CONSOLIDATED', dataVersione, lingua = 'ita', formato = 'html', ...date }) {
+    const [yyyy, mm, dd] = resolveDate(date);
+    const segments = [versione];
+    if (versione === 'CONSOLIDATED' && dataVersione) segments.push(dataVersione);
+    segments.push(lingua, formato);
+    return `https://www.normattiva.it/eli/id/${yyyy}/${mm}/${dd}/${codiceRedazionale}/${segments.join('/')}`;
+  }
+
+  await test('getEliUri — CONSOLIDATED via anno+mese+giorno includes /ita/html by default', () => {
+    const uri = buildEliUri({ anno: 2008, mese: 4, giorno: 9, codiceRedazionale: '008G0073' });
+    assert(uri === 'https://www.normattiva.it/eli/id/2008/04/09/008G0073/CONSOLIDATED/ita/html', `wrong URI: ${uri}`);
+  });
+
+  await test('getEliUri — CONSOLIDATED via dataGU (API field) includes /ita/html by default', () => {
+    const uri = buildEliUri({ dataGU: '2008-04-09', codiceRedazionale: '008G0073' });
+    assert(uri === 'https://www.normattiva.it/eli/id/2008/04/09/008G0073/CONSOLIDATED/ita/html', `wrong URI: ${uri}`);
+  });
+
+  await test('getEliUri — CONSOLIDATED + dataVersione matches PDF example 6', () => {
+    const uri = buildEliUri({ dataGU: '2005-01-28', codiceRedazionale: '005G0020', dataVersione: '20100101' });
+    assert(uri === 'https://www.normattiva.it/eli/id/2005/01/28/005G0020/CONSOLIDATED/20100101/ita/html', `wrong URI: ${uri}`);
+  });
+
+  await test('getEliUri — ORIGINAL matches PDF example 7', () => {
+    const uri = buildEliUri({ dataGU: '2005-01-28', codiceRedazionale: '005G0020', versione: 'ORIGINAL' });
+    assert(uri === 'https://www.normattiva.it/eli/id/2005/01/28/005G0020/ORIGINAL/ita/html', `wrong URI: ${uri}`);
+  });
+
+  await test('getEliUri — ORIGINAL ignores dataVersione', () => {
+    const uri = buildEliUri({ dataGU: '2008-04-09', codiceRedazionale: '008G0073', versione: 'ORIGINAL', dataVersione: '20150101' });
+    assert(uri === 'https://www.normattiva.it/eli/id/2008/04/09/008G0073/ORIGINAL/ita/html', `wrong URI: ${uri}`);
+    assert(!uri.includes('20150101'), 'dataVersione must not appear in ORIGINAL URI');
+  });
+
 
   // ─── Summary ────────────────────────────────────────────────────────────────
   const total = passed + failed;

@@ -74,6 +74,7 @@ fastmcp-normattiva/
 | `scaricaCollezioneAsincrona` | Download async result (step 4/4) |
 | `ottieniCollezioniPredefinite` | List curated dataset snapshots |
 | `scaricaCollezionePreconfezionata` | Download a named predefined collection |
+| `getEliUri` | Build a permanent ELI URI for any act |
 
 ---
 

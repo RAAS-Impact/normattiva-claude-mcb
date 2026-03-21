@@ -86,9 +86,29 @@ Normattiva also offers curated dataset snapshots:
 
 ---
 
+## ELI — European Legislation Identifier
+
+Normattiva exposes every act via a permanent ELI URI. Two tools handle this; both work from metadata already returned by search and detail tools — no extra search needed.
+
+### `getEliUri` — build a permanent link (no HTTP call)
+
+Pass `codiceRedazionale` and the publication date. The preferred form is **`dataGU`** (e.g. `"2008-04-09"`) — it is already returned by every search and detail tool. Alternatively pass `anno`, `mese`, `giorno` separately.
+
+Key parameter: **`dataVersione`** (format `"yyyymmdd"`) — use this when you need the version of the law as it stood on a specific date (e.g. `"20150101"`). Maps directly to `dataVigenza` from `getDettaglioAtto`. Without it, CONSOLIDATED returns the current in-force version.
+
+URI shape (per IPZS spec, always includes `/ita/html`):
+- Current consolidated: `.../008G0073/CONSOLIDATED/ita/html`
+- Historical point-in-time: `.../008G0073/CONSOLIDATED/20150101/ita/html`
+- Original at publication: `.../008G0073/ORIGINAL/ita/html`
+
+After retrieving any act, always call `getEliUri` to provide a permanent, browser-navigable, citable reference.
+
+---
+
 ## Practical tips
 
 - Always check `listaAtti` for search results and `codiceRedazionale` on each item.
 - If a user gives you a law name like "Legge 300/1970" (Statuto dei lavoratori), use `ricercaAvanzata` with `numeroProvvedimento: "300"` and year filter rather than free text — it's more precise.
 - The API is Italian-only; respond to the user in their language but know that tool parameters/responses are in Italian.
 - For article-level retrieval, you need both `codiceRedazionale` and `idArticolo`; get the article list from `getDettaglioAtto` first (without `idArticolo`) to see available sections.
+- After retrieving any act, routinely offer the ELI URI via `getEliUri` — it costs nothing and gives the user a permanent, citable reference.

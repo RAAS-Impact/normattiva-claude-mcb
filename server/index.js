@@ -203,7 +203,26 @@ const TOOLS = [
         formatoRichiesta: { type: 'string', description: 'Formato richiesta' }
       }
     }
-  }
+  },
+  {
+    name: 'getEliUri',
+    description: 'Costruisce l\'URI ELI (European Legislation Identifier) permanente di un atto. Schema IPZS: eli/id/{yyyy}/{mm}/{dd}/{codiceRedazionale}/{tipoVersione}/{dataVersione}/{lingua}/{formato}. Passare dataGU (es. "2008-04-09") oppure anno+mese+giorno separati — entrambe le forme sono accettate. CONSOLIDATED = testo vigente; CONSOLIDATED + dataVersione = testo vigente a una data specifica (formato "yyyymmdd", es. "20150101"); ORIGINAL = testo originale alla pubblicazione.',
+    inputSchema: {
+      type: 'object',
+      required: ['codiceRedazionale'],
+      properties: {
+        codiceRedazionale: { type: 'string', description: 'Codice redazionale dell\'atto (es. "008G0073"), restituito da tutti i tool di ricerca e dettaglio' },
+        dataGU: { type: 'string', description: 'Data di pubblicazione in GU nel formato "YYYY-MM-DD" (es. "2008-04-09"), restituita dal campo dataGU nei risultati di ricerca. Alternativa a anno+mese+giorno.' },
+        anno: { type: 'integer', description: 'Anno di pubblicazione in GU — usare in alternativa a dataGU' },
+        mese: { type: 'integer', description: 'Mese di pubblicazione in GU — usare in alternativa a dataGU' },
+        giorno: { type: 'integer', description: 'Giorno di pubblicazione in GU — usare in alternativa a dataGU' },
+        versione: { type: 'string', enum: ['CONSOLIDATED', 'ORIGINAL'], description: 'CONSOLIDATED (default) o ORIGINAL' },
+        dataVersione: { type: 'string', description: 'Data vigenza per versione storica, formato "yyyymmdd" (es. "20150101"). Solo con CONSOLIDATED.' },
+        lingua: { type: 'string', description: 'Lingua — solo "ita"' },
+        formato: { type: 'string', description: 'Formato — solo "html"' }
+      }
+    }
+  },
 ];
 
 // ─── HTTP Helper ──────────────────────────────────────────────────────────────
@@ -242,6 +261,19 @@ function apiRequest(method, path, body) {
     req.end();
   });
 }
+
+// ─── ELI Helpers ──────────────────────────────────────────────────────────────
+
+// Accepts either dataGU:"YYYY-MM-DD" or separate anno/mese/giorno fields.
+// Returns [yyyy, mm, dd] as zero-padded strings.
+function resolveDate({ dataGU, anno, mese, giorno }) {
+  if (dataGU) {
+    const [y, m, d] = dataGU.split('-');
+    return [y, m.padStart(2, '0'), d.padStart(2, '0')];
+  }
+  return [String(anno), String(mese).padStart(2, '0'), String(giorno).padStart(2, '0')];
+}
+
 
 // ─── Tool Dispatch ────────────────────────────────────────────────────────────
 
@@ -302,6 +334,15 @@ async function callTool(name, args = {}) {
       if (args.formatoRichiesta) params.set('formatoRichiesta', args.formatoRichiesta);
       resp = await apiRequest('GET', `/api/v1/collections/download/collection-preconfezionata?${params}`);
       break;
+    }
+    case 'getEliUri': {
+      const { codiceRedazionale, versione = 'CONSOLIDATED', dataVersione, lingua = 'ita', formato = 'html' } = args;
+      const [yyyy, mm, dd] = resolveDate(args);
+      const segments = [versione];
+      if (versione === 'CONSOLIDATED' && dataVersione) segments.push(dataVersione);
+      segments.push(lingua, formato);
+      const uri = `https://www.normattiva.it/eli/id/${yyyy}/${mm}/${dd}/${codiceRedazionale}/${segments.join('/')}`;
+      return { content: [{ type: 'text', text: JSON.stringify({ uri, versione, ...(dataVersione ? { dataVersione } : {}) }, null, 2) }] };
     }
     default:
       return { content: [{ type: 'text', text: `Tool sconosciuto: ${name}` }], isError: true };

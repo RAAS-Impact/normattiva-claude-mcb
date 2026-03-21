@@ -42,6 +42,21 @@ First public release of the Normattiva MCP Extension for Claude Desktop — a Mo
 - Distributed as a `.mcpb` Claude Desktop Extension; installable in one click from Settings → Extensions
 - 11 integration tests against the live API, all passing at release
 
+---
+
+## [1.1.0] - 2026-03-21
+
+### Added
+
+- **`getEliUri`** — builds a permanent [ELI](https://eur-lex.europa.eu/eli-register/about.html) (European Legislation Identifier) URI for any act retrieved via the existing search tools. No HTTP call — pure string composition from metadata already returned by the API. Accepts `dataGU` (e.g. `"2008-04-09"`) directly from search results, or `anno`+`mese`+`giorno` separately. Supports `CONSOLIDATED` (current in-force version), `CONSOLIDATED` + `dataVersione` (point-in-time historical version), and `ORIGINAL` (text as published). URI format follows the official IPZS ELI specification for Normattiva.
+
+### Technical Notes
+
+- 18 integration tests (up from 11), all passing
+- URI construction validated against the examples in the IPZS ELI specification document
+
+---
+
 ### Data & Licensing
 
 - Data source: [Normattiva](https://www.normattiva.it) — maintained by Istituto Poligrafico e Zecca dello Stato (IPZS)
