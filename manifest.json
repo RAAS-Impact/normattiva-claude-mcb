@@ -1,17 +1,17 @@
 {
   "manifest_version": "0.3",
-  "name": "normattiva",
-  "display_name": "Normattiva",
-  "version": "1.0.0",
-  "description": "Cerca e consulta la normativa italiana ufficiale tramite Normattiva (dati.normattiva.it).",
-  "long_description": "Collega Claude a Normattiva, il portale ufficiale della normativa italiana gestito dall'Istituto Poligrafico e Zecca dello Stato. Permette di cercare leggi, decreti e altri atti normativi, recuperarne il testo consolidato vigente, navigare articolo per articolo ed esportare collezioni di atti in bulk.",
+  "name": "diritto-fiscale-italiano",
+  "display_name": "Diritto Fiscale Italiano",
+  "version": "1.1.0",
+  "description": "Cerca e consulta la normativa e la prassi fiscale italiana: leggi, decreti, interpelli, circolari e risoluzioni.",
+  "long_description": "Collega Claude alle principali fonti ufficiali del diritto fiscale italiano. Tramite Normattiva (dati.normattiva.it) permette di cercare leggi e decreti, recuperarne il testo consolidato vigente e navigare articolo per articolo. Tramite il sito dell'Agenzia delle Entrate e il portale def.finanze.it permette di cercare e leggere risposte agli interpelli, circolari, risoluzioni e altri documenti di prassi emessi da Agenzia delle Entrate, Ministeri, INPS, Agenzia delle Dogane e altri enti fiscali.",
   "author": {
     "name": "linucs",
     "url": "https://github.com/linucs/fastmcp-normattiva"
   },
   "repository": { "type": "git", "url": "https://github.com/linucs/fastmcp-normattiva" },
   "license": "MIT",
-  "keywords": ["normattiva", "legge", "diritto", "italia", "normativa", "legislation"],
+  "keywords": ["normattiva", "interpello", "prassi", "fisco", "legge", "diritto", "italia", "normativa", "agenzia-entrate"],
   "server": {
     "type": "node",
     "entry_point": "server/index.js",
@@ -22,7 +22,9 @@
   },
   "tools_generated": true,
   "privacy_policies": [
-    "https://www.normattiva.it/note-legali"
+    "https://www.normattiva.it/note-legali",
+    "https://www.agenziaentrate.gov.it/portale/web/guest/privacy",
+    "https://def.finanze.it/DocTribFrontend/privacy.jsp"
   ],
   "compatibility": {
     "platforms": ["darwin", "win32"],
