@@ -44,11 +44,11 @@ const TOOLS = [
   },
   {
     name: 'ricercaAvanzata',
-    description: 'Ricerca filtrata con criteri strutturati. Usare quando l\'utente specifica tipo di atto, intervallo di date, numero dell\'atto o ente emanante. Prima di chiamarla, recuperare i valori validi dai tool tipologici.',
+    description: 'Ricerca filtrata con criteri strutturati. Usare quando l\'utente specifica tipo di atto, intervallo di date, numero dell\'atto o ente emanante. Preferire questa ricerca anche quando l\'utente cita un atto per numero (es. "Legge 300/1970"): usare numeroProvvedimento + annoProvvedimento è più preciso della ricerca libera. Prima di chiamarla, recuperare i valori validi dai tool tipologici.',
     inputSchema: {
       type: 'object',
       properties: {
-        denominazioneAtto: { type: 'string', description: 'Denominazione dell\'atto (es. "LEGGE", "DECRETO LEGISLATIVO") — valori validi da tipologicaDenominazione' },
+        denominazioneAtto: { type: 'string', description: 'Denominazione dell\'atto (es. "LEGGE", "DECRETO LEGISLATIVO"). ATTENZIONE: passare il campo \"value\" restituito da tipologicaDenominazione (es. "DECRETO LEGISLATIVO"), NON il codice \"label\" (es. "PLL").' },
         titoloRicerca: { type: 'string', description: 'Ricerca nel titolo' },
         testoRicerca: { type: 'string', description: 'Ricerca nel testo completo' },
         numeroProvvedimento: { type: 'integer', description: 'Numero dell\'atto' },
@@ -92,7 +92,7 @@ const TOOLS = [
   },
   {
     name: 'getDettaglioAtto',
-    description: 'Recupera il testo completo e i metadati di un atto tramite codiceRedazionale. Richede anche dataGU (data di pubblicazione in GU, formato YYYY-MM-DD), restituita insieme a codiceRedazionale dai tool di ricerca. Passare opzionalmente idArticolo per un articolo specifico.',
+    description: 'Recupera il testo completo e i metadati di un atto tramite codiceRedazionale. Richiede anche dataGU (data di pubblicazione in GU, formato YYYY-MM-DD), restituita insieme a codiceRedazionale dai tool di ricerca. Per il recupero a livello di articolo: chiamare prima SENZA idArticolo per ottenere la lista delle sezioni disponibili, poi richiamare CON idArticolo per l\'articolo desiderato.',
     inputSchema: {
       type: 'object',
       required: ['codiceRedazionale', 'dataGU'],
@@ -217,7 +217,7 @@ const TOOLS = [
         mese: { type: 'integer', description: 'Mese di pubblicazione in GU — usare in alternativa a dataGU' },
         giorno: { type: 'integer', description: 'Giorno di pubblicazione in GU — usare in alternativa a dataGU' },
         versione: { type: 'string', enum: ['CONSOLIDATED', 'ORIGINAL'], description: 'CONSOLIDATED (default) o ORIGINAL' },
-        dataVersione: { type: 'string', description: 'Data vigenza per versione storica, formato "yyyymmdd" (es. "20150101"). Solo con CONSOLIDATED.' },
+        dataVersione: { type: 'string', description: 'Data vigenza per versione storica, formato "yyyymmdd" (es. "20150101"). Solo con CONSOLIDATED. Corrisponde al campo dataVigenza restituito da getDettaglioAtto.' },
         lingua: { type: 'string', description: 'Lingua — solo "ita"' },
         formato: { type: 'string', description: 'Formato — solo "html"' }
       }

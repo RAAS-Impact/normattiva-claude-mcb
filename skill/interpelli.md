@@ -1,16 +1,4 @@
----
-name: interpelli
-description: >
-  Come cercare e consultare la prassi fiscale italiana: risposte agli interpelli,
-  circolari, risoluzioni e altri documenti emessi da Agenzia delle Entrate, Ministeri,
-  INPS, Agenzia delle Dogane e altri enti. Usa questa skill quando l'utente chiede
-  cosa dice l'Amministrazione finanziaria su un argomento fiscale, cerca un interpello
-  specifico per numero o data, vuole sapere la posizione ufficiale di un ente su una
-  norma tributaria, o fa domande del tipo "cosa dice l'AdE su X", "c'è un interpello
-  su Y", "qual è la posizione del Fisco su Z".
----
-
-# Skill: Prassi Fiscale Italiana (Interpelli e documenti collegati)
+# Prassi Fiscale Italiana (Interpelli e documenti collegati)
 
 ---
 
@@ -130,24 +118,62 @@ Determina: è una ricerca per numero/data? Per argomento? Quale ente? Quale tipo
 1. Naviga `https://www.agenziaentrate.gov.it/portale/interpelli-[ANNO]`
    - Se la pagina restituisce 404, tenta il percorso alternativo per anni storici:
      `https://www.agenziaentrate.gov.it/portale/normativa-e-prassi/risposte-agli-interpelli/interpelli/archivio-interpelli/interpelli-[ANNO]`
+     (es. per il 2018: `.../archivio-interpelli/interpelli-2018`; per il 2019: `.../archivio-interpelli/interpelli-2019`)
    - Se anche questo restituisce 404, naviga la pagina radice dell'archivio generale degli interpelli: `https://www.agenziaentrate.gov.it/portale/normativa-e-prassi/risposte-agli-interpelli/interpelli/archivio-interpelli`
    - Se anche questo restituisce 404, comunica il problema all'utente senza inventare risultati
-2. Usa `javascript_tool` con `document.querySelectorAll('main a')` per leggere gli href reali dei mesi — non costruire gli URL a mano (il pattern è inconsistente tra anni storici e recenti)
+   - **Nota 2018:** per quell'anno i link mensili nella pagina archivio hanno già il percorso completo (es. `.../interpelli-2018/dicembre-2018-interpelli`); il selettore `main a` li legge correttamente, non è necessario alcun adattamento.
+2. Usa `javascript_tool` con `document.querySelectorAll('main a')` per leggere gli href reali dei mesi — non costruire gli URL a mano (il pattern è inconsistente tra anni storici e recenti; es. agosto 2025 è `/portale/agosto-2025-interpello` al singolare)
 3. Individua il mese corretto dall'indicazione "dalla n° X alla n° Y" e naviga quell'href
-4. Usa `javascript_tool` con questa query (i link PDF sono fuori da `<main>`, quindi si uniscono testo e href in un'unica chiamata):
+4. Usa `javascript_tool` con questa query per ottenere numero, titolo e href di ogni interpello della pagina (i link PDF sono fuori da `<main>`, quindi si opera sull'intero documento):
    ```js
-   JSON.stringify(Array.from(document.querySelectorAll('a[href*="pdf"]')).map(a => ({
-     testo: a.closest('li, p, div')?.textContent?.trim() || a.textContent.trim(),
-     href: a.href
-   })))
+   JSON.stringify(Array.from(document.querySelectorAll('a[href*="pdf"]')).map(a => {
+     // Pattern principale (2019–oggi): "Risposta+n.+82_2026.pdf" — il "+" dopo "n." è opzionale,
+     // il suffisso "_ANNO" può mancare. Pattern di riserva (2018–2019): "Interpello+N+ANNO_..."
+     // (usato per filenames anomali come "Risposta.+14.pdf" o "Risposta+n.+3_vers2.pdf")
+     const m = a.href.match(/Risposta\+n\.\+?(\d+)(?:_(\d+))?\.pdf/i)
+            || a.href.match(/Interpello\+(\d+)\+(\d{4})/i);
+     // Il wrapper div.indcart_gn contiene sia "Risposta n. X del GG/MM/AAAA"
+     // sia il titolo; closest('li,p,div') si fermerebbe al <p> interno (solo titolo)
+     const container = a.closest('.indcart_gn') || a.closest('div');
+     return {
+       num:   m ? parseInt(m[1]) : null,
+       anno:  m ? m[2] : null,
+       testo: container?.textContent?.trim().replace(/\s+/g, ' ') || a.textContent.trim(),
+       href:  a.href
+     };
+   }).sort((a, b) => (a.num || 0) - (b.num || 0)))
    ```
 5. Annota internamente l'href del PDF corrispondente al numero cercato — **non navigare al PDF**. La pagina mensile deve restare aperta nel browser fino a che l'utente non conferma di voler leggere il documento.
 
 **Fonte B (def.finanze) — ricerca per argomento:**
 1. Naviga `https://def.finanze.it/DocTribFrontend/callRicAvanzataPrassi.do?js_enabled=1&reset=y` per ricerca avanzata
-2. Compila il campo "Parole" con i termini chiave
-3. Se opportuno, filtra per `tipoEstremi` (es. "Interpello") e/o per `ente` (es. "Agenzia delle Entrate")
-4. Invia la ricerca e leggi la lista di risultati: titolo, data, ente, oggetto di ciascun documento
+2. Compila e invia il form con `javascript_tool`. Il form ha id `formRicAvanzP`; i campi principali sono:
+   - `parole` — termini di ricerca (es. `"lavoratori impatriati"`)
+   - `tipoEstremi` — tipo documento: `"Interpello"`, `"Circolare"`, `"Risoluzione"`, ecc. (lascia vuoto per tutti)
+   - `ente` — ente emanante esatto (es. `"Agenzia delle Entrate"`, `"INPS"`; lascia vuoto per tutti)
+   - `annoDataEmissioneDa` / `annoDataEmissioneA` — anno di inizio/fine emissione (es. `"2024"`)
+   ```js
+   const f = document.querySelector('#formRicAvanzP');
+   f.querySelector('[name="parole"]').value = 'TERMINI DI RICERCA';
+   f.querySelector('[name="tipoEstremi"]').value = 'Interpello'; // o '' per tutti i tipi
+   f.querySelector('[name="ente"]').value = 'Agenzia delle Entrate'; // o '' per tutti gli enti
+   f.querySelector('[name="annoDataEmissioneDa"]').value = '2024'; // ometti se non serve
+   f.querySelector('[name="annoDataEmissioneA"]').value  = '2024'; // ometti se non serve
+   f.submit();
+   ```
+3. Leggi i risultati con `get_page_text`: ogni voce mostra tipo documento, data, numero, ente (nel titolo del link) e oggetto (testo subito sotto, nello stesso blocco). Il totale è indicato come "Documenti trovati: N". In alternativa, usa `javascript_tool`:
+   ```js
+   JSON.stringify(Array.from(document.querySelectorAll('div.risultato-ricerca'))
+     .map(d => d.innerText.trim().replace(/\s+/g, ' ')))
+   ```
+4. **Paginazione dei risultati:** la prima pagina è servita da `executeAdvancedPrassiSearch.do`; le pagine successive da `paginatorXml.do`. I link "Avanti" nella pagina **non funzionano tramite href** (i link senza `onclick` sono decorativi/duplicati). Per navigare alla pagina successiva, usa `javascript_tool` per cliccare il nodo con `onclick` impostato:
+   ```js
+   const avanti = Array.from(document.querySelectorAll('a'))
+     .find(l => l.textContent.trim() === 'Avanti' && l.onclick !== null);
+   if (avanti) avanti.click();
+   ```
+   Dopo il click, attendere il caricamento e leggere i nuovi risultati con `get_page_text`. Segnalare all'utente la presenza di ulteriori pagine e chiedere prima di proseguire, salvo richiesta esplicita di elencare tutti i risultati.
+   **Attenzione:** la sessione di paginazione è server-side. Se la navigazione diretta a `paginatorXml.do` non mostra i risultati attesi, la sessione è scaduta: ripetere la ricerca dal punto 1.
 
 ### Passo 3 — Presenta la lista all'utente
 Mostra i risultati trovati con: tipo documento, numero, data, ente, oggetto/titolo.
@@ -192,4 +218,3 @@ Se il documento è già nei file del progetto (l'utente lo segnala o lo si ricon
 - **Gestione errori:** se una pagina non risponde o un PDF non è raggiungibile, comunicarlo all'utente senza inventare contenuti. Non affermare di aver letto un documento che non è stato effettivamente recuperato
 - def.finanze.it restituisce risultati misti (interpelli + circolari + risoluzioni): usa il filtro `tipoEstremi=Interpello` se l'utente vuole solo interpelli
 - Non aprire mai PDF in autonomia senza che l'utente abbia scelto il documento: la lista dei titoli è sufficiente per il primo livello di risposta
-- Questa skill è estensibile: in futuro potrebbero aggiungersi altre fonti (es. Agenzia delle Dogane, Ministero del Lavoro). Ogni nuova fonte seguirà la stessa struttura: cosa contiene, quando usarla, come navigarla

@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.2.0] - 2026-03-31
+
+### Added
+
+- **`diritto-italiano` skill** — a unified Claude skill covering both Italian legislation and fiscal practice:
+  - `skill/SKILL.md` — routing logic: directs Claude to Normattiva tools for legislation and to web navigation for fiscal guidance
+  - `skill/normattiva.md` — extracted from the previous monolithic `SKILL.md`; instructions for the Normattiva MCP tools
+  - `skill/interpelli.md` — new skill for finding and reading interpelli, circolari, risoluzioni and other prassi documents from `agenziaentrate.gov.it` and `def.finanze.it`
+
+- **`test/INTERPELLI.md`** — 19-scenario manual test suite for the interpelli navigation skill, covering routing, Fonte A/B navigation, PDF delivery, pagination, error handling, and historical years
+
+### Changed
+
+- Skills directory restructured: `skills/interpelli/SKILL.md` and `skills/normattiva/SKILL.md` merged and reorganised into `skill/` (flat, three files)
+- Integration tests moved from `test.js` to `test/normattiva.js`
+
+### Fixed (`skill/interpelli.md`)
+
+Five navigation bugs identified by live inspection of both sites:
+
+- **AE — DOM container** (`agenziaentrate.gov.it`): the JS snippet used `a.closest('li, p, div')` which stopped at the `<p>` parent, returning only the title and losing the interpello number and date. Fixed by using `a.closest('.indcart_gn')` (the actual entry wrapper div) as primary selector.
+- **AE — filename regex**: the regex `Risposta\+n\.\+(\d+)_(\d+)\.pdf` failed on (a) 2018 filenames where the `_ANNO` suffix is absent, (b) some 2019 filenames where the `+` after `n.` is missing, and (c) entirely non-standard 2018 filenames (e.g. `Risposta.+14.pdf`, `Risposta+n.+3_vers2.pdf`). Fixed with a two-regex approach: primary `Risposta\+n\.\+?(\d+)(?:_(\d+))?\.pdf` + fallback `Interpello\+(\d+)\+(\d{4})`.
+- **def.finanze.it — result reading**: the skill said "leggi la lista di risultati" without specifying the method. Using `a.textContent` silently drops the oggetto (subject), which lives in a sibling text node inside `div.risultato-ricerca`. Explicit `get_page_text` instruction added, with `div.risultato-ricerca innerText` as JS alternative.
+- **def.finanze.it — form submission**: field names (`parole`, `tipoEstremi`, `ente`, `annoDataEmissioneDa`, `annoDataEmissioneA`) and form id (`#formRicAvanzP`) were not documented; Claude had to guess. Canonical JS snippet added.
+- **def.finanze.it — pagination session**: `paginatorXml.do` is server-side stateful; direct navigation resets to an unrelated page. Added note that the session is tied to the original search and must be re-run if lost.
+
+- **AE — 2018 monthly link paths**: documented that 2018 archive month links use full sub-paths (`.../interpelli-2018/dicembre-2018-interpelli`) while later years use short slugs; `main a` selector handles both, no adaptation needed.
+
 ## [1.0.0] - 2026-03-21
 
 ### Initial Release

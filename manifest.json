@@ -1,33 +1,47 @@
 {
   "manifest_version": "0.3",
-  "name": "diritto-fiscale-italiano",
-  "display_name": "Diritto Fiscale Italiano",
+  "name": "normattiva-mcp",
+  "display_name": "Normattiva MCP Server",
   "version": "1.1.0",
-  "description": "Cerca e consulta la normativa e la prassi fiscale italiana: leggi, decreti, interpelli, circolari e risoluzioni.",
-  "long_description": "Collega Claude alle principali fonti ufficiali del diritto fiscale italiano. Tramite Normattiva (dati.normattiva.it) permette di cercare leggi e decreti, recuperarne il testo consolidato vigente e navigare articolo per articolo. Tramite il sito dell'Agenzia delle Entrate e il portale def.finanze.it permette di cercare e leggere risposte agli interpelli, circolari, risoluzioni e altri documenti di prassi emessi da Agenzia delle Entrate, Ministeri, INPS, Agenzia delle Dogane e altri enti fiscali.",
+  "description": "Cerca e consulta la normativa italiana ufficiale: leggi, decreti e atti legislativi dalla banca dati Normattiva (dati.normattiva.it).",
+  "long_description": "Server MCP che collega Claude alla banca dati ufficiale della normativa italiana consolidata (dati.normattiva.it). Permette di cercare leggi e decreti con ricerca libera o filtrata, recuperarne il testo consolidato vigente o storico, navigare articolo per articolo, esportare collezioni di atti e generare URI ELI permanenti. Include una skill complementare che guida Claude nella ricerca di prassi fiscale (interpelli, circolari, risoluzioni) sui portali dell'Agenzia delle Entrate e del Dipartimento delle Finanze tramite navigazione web.",
   "author": {
     "name": "linucs",
-    "url": "https://github.com/linucs/fastmcp-normattiva"
+    "url": "https://github.com/RAAS-Impact/normattiva-claude-mcb"
   },
-  "repository": { "type": "git", "url": "https://github.com/linucs/fastmcp-normattiva" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RAAS-Impact/normattiva-claude-mcb"
+  },
   "license": "MIT",
-  "keywords": ["normattiva", "interpello", "prassi", "fisco", "legge", "diritto", "italia", "normativa", "agenzia-entrate"],
+  "keywords": [
+    "normattiva",
+    "legge",
+    "decreto",
+    "diritto",
+    "italia",
+    "normativa",
+    "eli"
+  ],
   "server": {
     "type": "node",
     "entry_point": "server/index.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/server/index.js"]
+      "args": [
+        "${__dirname}/server/index.js"
+      ]
     }
   },
   "tools_generated": true,
   "privacy_policies": [
-    "https://www.normattiva.it/note-legali",
-    "https://www.agenziaentrate.gov.it/portale/web/guest/privacy",
-    "https://def.finanze.it/DocTribFrontend/privacy.jsp"
+    "https://www.normattiva.it/note-legali"
   ],
   "compatibility": {
-    "platforms": ["darwin", "win32"],
+    "platforms": [
+      "darwin",
+      "win32"
+    ],
     "runtimes": {
       "node": ">=18.0.0"
     }

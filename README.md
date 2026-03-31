@@ -1,12 +1,18 @@
 # Normattiva MCP Extension
 
-A Claude Desktop Extension that connects Claude to [Normattiva](https://www.normattiva.it) — Italy's official consolidated legislation database.
+A Claude Desktop Extension that connects Claude to Italian law and fiscal practice:
+
+- **[Normattiva](https://www.normattiva.it)** — Italy's official consolidated legislation database
+- **[Agenzia delle Entrate](https://www.agenziaentrate.gov.it)** and **[def.finanze.it](https://def.finanze.it)** — interpelli, circolari, risoluzioni and other fiscal guidance documents
 
 Once installed, you can ask Claude things like:
 
 - *"Trova il decreto legislativo 81/2008 sulla sicurezza sul lavoro"*
 - *"Cosa dice l'articolo 18 dello Statuto dei Lavoratori?"*
 - *"Quali leggi sono state aggiornate tra gennaio e marzo 2024?"*
+- *"Trovami l'interpello n. 82 del 2026"*
+- *"Cosa dice l'AdE sulle cripto-attività?"*
+- *"Ci sono circolari dell'INPS sulla contribuzione sportiva?"*
 
 ---
 
@@ -35,23 +41,32 @@ Then double-click the generated `normattiva.mcpb` file.
 
 ## Adding the skill
 
-The `skill/SKILL.md` file in this repo teaches Claude how to navigate the Normattiva API correctly — which tool to pick, in what order, and with what parameters.
+The `skill/` directory contains Claude skill files that teach Claude how to use the extension correctly.
 
-To use it, copy the contents of [`skill/SKILL.md`](skill/SKILL.md) into your Claude Project instructions.
+Copy the contents of **all three files** into your Claude Project instructions, in this order:
+
+1. [`skill/SKILL.md`](skill/SKILL.md) — routing: decides whether to use Normattiva tools or web navigation
+2. [`skill/normattiva.md`](skill/normattiva.md) — how to search and retrieve legislation via the MCP tools
+3. [`skill/interpelli.md`](skill/interpelli.md) — how to navigate agenziaentrate.gov.it and def.finanze.it for fiscal guidance documents
 
 ---
 
 ## How it works
 
-The extension implements the full [Normattiva OpenData REST API](https://dati.normattiva.it/assets/come_fare_per/openapi-bff-opendata.json) as MCP tools. It is a single JavaScript file with no npm dependencies — only Node.js built-ins.
+The extension implements the full [Normattiva OpenData REST API](https://dati.normattiva.it/assets/come_fare_per/openapi-bff-opendata.json) as MCP tools. Fiscal practice documents (interpelli, circolari) are retrieved via browser navigation using Claude's built-in web tools — no additional MCP server required for that part.
 
 ```
-fastmcp-normattiva/
+normattiva-claude-mcb/
 ├── manifest.json        # Extension manifest (mcpb)
 ├── server/
 │   └── index.js         # MCP server — pure Node.js, no dependencies
 ├── skill/
-│   └── SKILL.md         # Claude skill (instructions for using the tools)
+│   ├── SKILL.md         # Routing: legislation vs. fiscal practice
+│   ├── normattiva.md    # Instructions for Normattiva MCP tools
+│   └── interpelli.md    # Instructions for navigating AE and def.finanze.it
+├── test/
+│   ├── normattiva.js    # Integration tests (Normattiva API)
+│   └── INTERPELLI.md    # Manual test suite (interpelli navigation)
 └── README.md
 ```
 

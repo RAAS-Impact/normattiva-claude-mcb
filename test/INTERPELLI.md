@@ -1,6 +1,6 @@
 # Suite di test manuali — Skill Interpelli
 
-Da eseguire su Claude Desktop dopo aver installato il pacchetto `.mcpb`.
+Da eseguire su Claude Desktop dopo aver installato il pacchetto `.mcpb` e la skill `.skill` (`diritto-italiano`).
 Per ogni scenario: inviare la query a Claude e verificare che il comportamento corrisponda a quello atteso.
 
 ---
@@ -10,8 +10,8 @@ Per ogni scenario: inviare la query a Claude e verificare che il comportamento c
 **Query:** `Cosa dice l'Agenzia delle Entrate sui lavoratori impatriati?`
 
 **Comportamento atteso:**
-- Claude riconosce autonomamente che deve usare la skill `interpelli` (senza che l'utente la invochi con `/interpelli`)
-- Non usa la skill `normattiva`
+- Claude attiva la skill `diritto-italiano` e segue le istruzioni di `interpelli.md` (senza che l'utente la invochi esplicitamente)
+- Non segue le istruzioni di `normattiva.md` né usa i tool MCP Normattiva
 - Naviga def.finanze.it con i termini "lavoratori impatriati" e filtro Interpello
 - Presenta una lista di risultati con numero, data, ente, oggetto
 - NON apre nessun PDF prima che l'utente scelga
@@ -112,15 +112,16 @@ Per ogni scenario: inviare la query a Claude e verificare che il comportamento c
 
 ---
 
-## T08 — Nessuna sovrapposizione con la skill normattiva
+## T08 — Routing corretto verso normattiva.md
 
 **Query:** `Cerca il decreto legislativo 209 del 2023 su normattiva`
 
 **Comportamento atteso:**
-- Claude usa la skill `normattiva`, NON la skill `interpelli`
+- Claude attiva la skill `diritto-italiano` e segue le istruzioni di `normattiva.md`
+- Usa i tool MCP Normattiva (ricercaAvanzata o simili)
 - Non naviga agenziaentrate.gov.it né def.finanze.it
 
-**Verifica:** le due skill non si attivano in modo errato a vicenda
+**Verifica:** il routing della skill indirizza correttamente verso `normattiva.md` per richieste su atti legislativi
 
 ---
 
@@ -218,11 +219,71 @@ Per ogni scenario: inviare la query a Claude e verificare che il comportamento c
 
 ---
 
+## T16 — Paginazione risultati def.finanze.it (Fonte B)
+
+**Query:** `Mostrami tutti gli interpelli AdE sull'IVA del 2024`
+
+**Comportamento atteso:**
+- Claude esegue la ricerca su def.finanze.it con `parole=IVA`, `tipoEstremi=Interpello`, `ente=Agenzia delle Entrate`, anno 2024
+- La ricerca restituisce molti risultati su più pagine
+- Claude presenta la prima pagina di risultati con numero, data, oggetto
+- Indica che ci sono ulteriori risultati (es. "Ci sono altri risultati, vuoi che continui?")
+- NON naviga automaticamente alle pagine successive senza che l'utente lo chieda
+
+**Verifica:** Claude riconosce che i risultati sono paginati e lo comunica all'utente
+
+---
+
+## T17 — Navigazione alla pagina successiva (Fonte B)
+
+**Prerequisito:** T16 completato, Claude ha mostrato la prima pagina di risultati
+
+**Query:** `Sì, mostrami la pagina successiva`
+
+**Comportamento atteso:**
+- Claude naviga alla seconda pagina dei risultati su def.finanze.it
+- Presenta i nuovi risultati nello stesso formato della prima pagina
+- Se ci sono altre pagine ancora, lo segnala
+- Non ripete i risultati già mostrati nella prima pagina
+
+**Verifica:** i risultati della seconda pagina sono diversi da quelli della prima
+
+---
+
+## T18 — Paginazione mesi AE con molti interpelli (Fonte A)
+
+**Query:** `Mostrami tutti gli interpelli di gennaio 2025`
+
+**Comportamento atteso:**
+- Claude naviga la pagina annuale 2025 su agenziaentrate.gov.it
+- Identifica il mese di gennaio e naviga quell'href
+- Se la pagina mensile contiene molti interpelli, li presenta tutti (o in blocchi gestibili)
+- Se la pagina AE stessa è paginata o suddivisa, naviga le sotto-pagine per completare la lista
+- Indica il numero totale di interpelli trovati per quel mese
+
+**Verifica:** la lista è completa rispetto a quanto pubblicato sulla pagina AE
+
+---
+
+## T19 — Richiesta esplicita di tutti i risultati (Fonte B)
+
+**Query:** `Elencami TUTTI gli interpelli AdE del 2024 sul superbonus, anche se sono su più pagine`
+
+**Comportamento atteso:**
+- Claude esegue la ricerca su def.finanze.it
+- Naviga tutte le pagine di risultati fino all'ultima
+- Presenta una lista consolidata e completa
+- Indica il numero totale di documenti trovati
+
+**Verifica:** Claude scorre effettivamente tutte le pagine e non si ferma alla prima
+
+---
+
 ## Checklist di validazione generale
 
 Per ogni test verificare:
 
-- [ ] La skill corretta viene attivata (interpelli vs normattiva)
+- [ ] La skill `diritto-italiano` si attiva e il routing sceglie il file corretto (`interpelli.md` vs `normattiva.md`)
 - [ ] Claude non costruisce URL mensili AE a mano ma li legge dalla pagina
 - [ ] Claude non apre PDF prima della scelta dell'utente
 - [ ] Il selettore PDF usa `a[href*="pdf"]` sull'intero documento (non dentro `main`)
@@ -232,3 +293,4 @@ Per ogni test verificare:
 - [ ] Se il PDF è già nei file del progetto, Claude non chiede di allegarlo nuovamente
 - [ ] La risposta finale cita sempre: tipo, numero, data, ente, link
 - [ ] Nessuna allucinazione di documenti o contenuti non allegati
+- [ ] Quando i risultati sono paginati, Claude lo segnala e chiede prima di proseguire (salvo richiesta esplicita di "tutti")
