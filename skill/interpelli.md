@@ -72,21 +72,55 @@ Questa skill usa due fonti complementari. Ogni fonte ha un ambito diverso: **non
 **Cosa NON contiene:**
 - Interpelli AdE dal 2018 al 2021 in modo completo (la copertura può essere parziale per quel periodo)
 
-**Struttura di navigazione:**
-- Ricerca semplice: POST a `https://def.finanze.it/DocTribFrontend/executeSearch.do`
-  - Campo `ambitoRicerca`: `P` per Prassi (usare sempre questo per interpelli e prassi)
-  - Campi `parole`, `anno`, `numero` per filtrare
-- Ricerca avanzata: `https://def.finanze.it/DocTribFrontend/callRicAvanzataPrassi.do?js_enabled=1&reset=y`
-  - La pagina contiene due form: usare sempre `form[action*="executeAdvancedPrassiSearch"]`
-  - Filtri aggiuntivi: `tipoEstremi` (Interpello / Circolare / Risoluzione / ...) e `ente` (Agenzia delle Entrate / Min. Lavoro / ...)
-- Risultati: lista di link a `getPrassiDetail.do?id={GUID}`
-- Pagina di dettaglio: metadati (data, numero, ente, oggetto) + link al PDF tramite `getContent.do?id={GUID-diverso}`
+**Quattro ambiti di ricerca (tab nel sito):**
+
+| Tab | `ambitoRicerca` | Pagina form avanzato | Endpoint risultati |
+|---|---|---|---|
+| Normativa | `N` | `callRicAvanzataNormativa.do?js_enabled=1&reset=y` | `executeAdvancedNormativaSearch.do` |
+| Prassi | `P` | `callRicAvanzataPrassi.do?js_enabled=1&reset=y` | `executeAdvancedPrassiSearch.do` |
+| Giurisprudenza | `G` | `callRicAvanzataGiurisprudenza.do?js_enabled=1&reset=y` | `executeAdvancedGiurisprudenzaSearch.do` |
+| Collezioni | — | `documentiRilevanti.do?js_enabled=1&agenzia=COL` | `executeSearchRil.do` |
+
+**Due modalità di ricerca:**
+- **Ricerca semplice (solo parole chiave):** GET a `https://def.finanze.it/DocTribFrontend/executeSearch.do?ambitoRicerca=X&parole=...` — nessuna navigazione form necessaria
+- **Ricerca avanzata (con filtri):** le `executeAdvanced*.do` accettano solo POST — navigare il form, compilare con `javascript_tool`, fare `f.submit()`
+
+**Parametri per ambito** (i nomi corrispondono ai campi `name` dei form):
+
+*Comuni a Normativa, Prassi, Giurisprudenza:*
+- `parole` — termini di ricerca in full-text
+- `tipoCriterioRicerca` — `0`=tutte le parole, `1`=almeno una, `2`=frase esatta, `3`=parole adiacenti, `4`=operatori logici
+- `tipo_ord` — `DATA` (cronologico) o `RANK` (rilevanza)
+- `ricercaNelTitolo` — `on` per limitare la ricerca al solo titolo
+- `tipoEstremi` — tipo documento (valori diversi per ambito; per Prassi: `Interpello`, `Circolare`, `Risoluzione`, `Nota`, `Direttiva`, `Delibera`, `Lettera circolare`, `Comunicato Stampa`, `Telegramma`)
+- `numero` — numero del documento
+- `annoDataEmissioneDa` / `meseDataEmissioneDa` / `giornoDataEmissioneDa` — inizio intervallo data emissione
+- `annoDataEmissioneA` / `meseDataEmissioneA` / `giornoDataEmissioneA` — fine intervallo data emissione
+- `ente` — ente emanante esatto (per Prassi es. `Agenzia delle Entrate`, `INPS`, `Banca d'Italia`, `Agenzia delle Dogane e dei Monopoli`; lascia vuoto per tutti)
+- `superEnte` — ministero/dipartimento (`Finanze`, `Lavoro`, `Tesoro`, ecc.; lascia vuoto per tutti)
+- `materiaFiscale` — categoria tematica fiscale
+- `classificazioneArgomento` — sottocategoria tematica
+
+*Solo Normativa (`ambitoRicerca=N`):*
+- `articolo`, `numArticolo`, `comma` — ricerca per articolo specifico
+- `numeroGU` — numero Gazzetta Ufficiale
+- `annoDataGUDa` / `meseDataGUDa` / `giornoDataGUDa` e `...A` — intervallo data GU
+
+*Solo Giurisprudenza (`ambitoRicerca=G`):*
+- `ricercaPresenzaMassima` — `on` per cercare solo pronunce con massima
+
+*Solo Collezioni (form `documentiRilevanti.do`):*
+- `classAgenzia` — codice collezione (es. `COLLEZIONI-0005`=Leggi di bilancio, `COLLEZIONI-0011`=Fatturazione elettronica, `COLLEZIONI-0100`–`COLLEZIONI-0104`=Massime Cassazione 2020–2024); lascia vuoto per tutte
+- `parole`, `tipoCriterioRicerca`, `tipo_ord`, `numero`, campi data emissione — stessi di sopra (no `ente`, `tipoEstremi`, `materiaFiscale`)
 
 **Quando usarla:**
-- L'utente cerca per **argomento** senza specificare ente o numero ("cosa dice la prassi su X")
-- L'utente cerca prassi di **enti diversi da AdE**
-- L'utente cerca **circolari, risoluzioni** o altri tipi di prassi (non solo interpelli)
-- Punto di ingresso predefinito per qualsiasi ricerca per contenuto
+- L'utente cerca per **argomento** senza specificare ente o numero → Prassi (`ambitoRicerca=P`)
+- L'utente cerca prassi di **enti diversi da AdE** → Prassi con filtro `ente`
+- L'utente cerca **circolari, risoluzioni** o altri tipi di prassi → Prassi con filtro `tipoEstremi`
+- L'utente cerca **testo normativo** (leggi, decreti) → Normativa (`ambitoRicerca=N`)
+- L'utente cerca **giurisprudenza** (sentenze, massime) → Giurisprudenza (`ambitoRicerca=G`)
+- L'utente cerca in una **collezione tematica** → Collezioni con `classAgenzia`
+- Punto di ingresso predefinito per qualsiasi ricerca per contenuto: Prassi
 
 ---
 
@@ -94,14 +128,17 @@ Questa skill usa due fonti complementari. Ogni fonte ha un ambito diverso: **non
 
 Prima di navigare, classifica la richiesta:
 
-| Tipo di richiesta | Fonte primaria | Note |
+| Tipo di richiesta | Fonte | Ambito / form |
 |---|---|---|
 | Numero e anno specifico AdE ("interpello 82/2026") | **Fonte A** (AE) | Navigazione diretta per anno/mese |
-| Argomento generico ("cosa dice l'AdE su X") | **Fonte B** (def.finanze) | Full-text search |
-| Ente non-AdE ("circolare INPS su X") | **Fonte B** (def.finanze) | Filtrare per ente |
-| Tipo non-interpello ("circolari su X") | **Fonte B** (def.finanze) | Filtrare per tipoEstremi |
+| Prassi per argomento ("cosa dice l'AdE su X") | **Fonte B** | Prassi (`ambitoRicerca=P`) |
+| Prassi ente non-AdE ("circolare INPS su X") | **Fonte B** | Prassi + filtro `ente` |
+| Tipo specifico ("circolari su X", "risoluzioni su Y") | **Fonte B** | Prassi + filtro `tipoEstremi` |
+| Testo normativo ("testo del D.Lgs. 231/2001") | **Normattiva MCP** o **Fonte B** | Normativa (`ambitoRicerca=N`) |
+| Giurisprudenza ("sentenze Cassazione su X") | **Fonte B** | Giurisprudenza (`ambitoRicerca=G`) |
+| Collezione tematica ("massime Cassazione 2023") | **Fonte B** | Collezioni (`classAgenzia=COLLEZIONI-0103`) |
 | Browsing recente AdE | **Fonte A** (AE) | Homepage o anno corrente |
-| Argomento + periodo specifico | **Fonte B** (def.finanze) | Filtro per parole + anno |
+| Argomento + periodo specifico | **Fonte B** | Prassi + filtro anno |
 
 ---
 
@@ -146,34 +183,62 @@ Determina: è una ricerca per numero/data? Per argomento? Quale ente? Quale tipo
 5. Annota internamente l'href del PDF corrispondente al numero cercato — **non navigare al PDF**. La pagina mensile deve restare aperta nel browser fino a che l'utente non conferma di voler leggere il documento.
 
 **Fonte B (def.finanze) — ricerca per argomento:**
-1. Naviga `https://def.finanze.it/DocTribFrontend/callRicAvanzataPrassi.do?js_enabled=1&reset=y` per ricerca avanzata
-2. Compila e invia il form con `javascript_tool`. Il form ha id `formRicAvanzP`; i campi principali sono:
-   - `parole` — termini di ricerca (es. `"lavoratori impatriati"`)
-   - `tipoEstremi` — tipo documento: `"Interpello"`, `"Circolare"`, `"Risoluzione"`, ecc. (lascia vuoto per tutti)
-   - `ente` — ente emanante esatto (es. `"Agenzia delle Entrate"`, `"INPS"`; lascia vuoto per tutti)
-   - `annoDataEmissioneDa` / `annoDataEmissioneA` — anno di inizio/fine emissione (es. `"2024"`)
+
+**Caso A — ricerca solo per parole chiave (nessun filtro):** usa `navigate` direttamente:
+```
+https://def.finanze.it/DocTribFrontend/executeSearch.do?ambitoRicerca=P&parole=TERMINI
+https://def.finanze.it/DocTribFrontend/executeSearch.do?ambitoRicerca=N&parole=TERMINI
+https://def.finanze.it/DocTribFrontend/executeSearch.do?ambitoRicerca=G&parole=TERMINI
+https://def.finanze.it/DocTribFrontend/executeSearchRil.do?classAgenzia=COLLEZIONI-0103&parole=TERMINI
+```
+I risultati (e `$risultati`) sono disponibili immediatamente dopo la navigazione — nessun JS necessario.
+
+**Caso B — ricerca avanzata (con filtri per tipo, ente, date, numero, ecc.):** le `executeAdvanced*.do` accettano solo POST; navigare prima il form, poi compilare con `javascript_tool` e fare `f.submit()`.
+
+| Ambito | Form URL | Form `id` |
+|---|---|---|
+| Prassi | `callRicAvanzataPrassi.do?js_enabled=1&reset=y` | `formRicAvanzP` |
+| Normativa | `callRicAvanzataNormativa.do?js_enabled=1&reset=y` | `formRicAvanzN` |
+| Giurisprudenza | `callRicAvanzataGiurisprudenza.do?js_enabled=1&reset=y` | `formRicAvanzG` |
+| Collezioni | `documentiRilevanti.do?js_enabled=1&agenzia=COL` | (form unico) |
+
+Snippet generico per compilare e inviare (sostituire `#formRicAvanzP` con l'id corretto e impostare solo i campi necessari):
+```js
+const f = document.querySelector('#formRicAvanzP');
+f.querySelector('[name="parole"]').value          = 'TERMINI DI RICERCA';
+f.querySelector('[name="tipoEstremi"]').value      = 'Interpello';      // '' per tutti
+f.querySelector('[name="ente"]').value             = 'Agenzia delle Entrate'; // '' per tutti
+f.querySelector('[name="annoDataEmissioneDa"]').value = '2024';         // ometti se non serve
+f.querySelector('[name="annoDataEmissioneA"]').value  = '2025';         // ometti se non serve
+// Solo Normativa: f.querySelector('[name="tipoEstremi"]').value = 'Decreto Legislativo';
+// Solo Normativa: f.querySelector('[name="numArticolo"]').value = '18';
+// Solo Giurisprudenza: f.querySelector('[name="ricercaPresenzaMassima"]').checked = true;
+// Solo Collezioni: f.querySelector('[name="classAgenzia"]').value = 'COLLEZIONI-0103';
+f.submit();
+```
+
+2. Dopo la navigazione (Caso A) o il submit (Caso B), leggi i risultati con `get_page_text`. Il totale è indicato come "Documenti trovati: N".
+3. **Accesso diretto ai risultati — `$risultati`:**
+   Il motore carica i risultati in batch da 50 documenti. Tutti i documenti del batch corrente sono accessibili nella variabile globale jQuery `$risultati` (collection cumulativa: cresce di 50 ad ogni batch). Per estrarre metadati e URL PDF **senza navigare ogni singolo documento**:
    ```js
-   const f = document.querySelector('#formRicAvanzP');
-   f.querySelector('[name="parole"]').value = 'TERMINI DI RICERCA';
-   f.querySelector('[name="tipoEstremi"]').value = 'Interpello'; // o '' per tutti i tipi
-   f.querySelector('[name="ente"]').value = 'Agenzia delle Entrate'; // o '' per tutti gli enti
-   f.querySelector('[name="annoDataEmissioneDa"]').value = '2024'; // ometti se non serve
-   f.querySelector('[name="annoDataEmissioneA"]').value  = '2024'; // ometti se non serve
-   f.submit();
+   JSON.stringify($risultati.toArray().slice(-50).map(prov => {
+     const el = $(prov);
+     const tmp = document.createElement('div');
+     tmp.innerHTML = el.find('titoliProvvedimento').text();
+     return {
+       idElemento: el.find('elemento').first().attr('idElemento'),
+       estremi: el.find('estremi').text().trim(),
+       titolo: tmp.textContent.trim().replace(/\s+/g, ' ').substring(0, 150)
+     };
+   }))
    ```
-3. Leggi i risultati con `get_page_text`: ogni voce mostra tipo documento, data, numero, ente (nel titolo del link) e oggetto (testo subito sotto, nello stesso blocco). Il totale è indicato come "Documenti trovati: N". In alternativa, usa `javascript_tool`:
-   ```js
-   JSON.stringify(Array.from(document.querySelectorAll('div.risultato-ricerca'))
-     .map(d => d.innerText.trim().replace(/\s+/g, ' ')))
-   ```
-4. **Paginazione dei risultati:** la prima pagina è servita da `executeAdvancedPrassiSearch.do`; le pagine successive da `paginatorXml.do`. I link "Avanti" nella pagina **non funzionano tramite href** (i link senza `onclick` sono decorativi/duplicati). Per navigare alla pagina successiva, usa `javascript_tool` per cliccare il nodo con `onclick` impostato:
-   ```js
-   const avanti = Array.from(document.querySelectorAll('a'))
-     .find(l => l.textContent.trim() === 'Avanti' && l.onclick !== null);
-   if (avanti) avanti.click();
-   ```
-   Dopo il click, attendere il caricamento e leggere i nuovi risultati con `get_page_text`. Segnalare all'utente la presenza di ulteriori pagine e chiedere prima di proseguire, salvo richiesta esplicita di elencare tutti i risultati.
-   **Attenzione:** la sessione di paginazione è server-side. Se la navigazione diretta a `paginatorXml.do` non mostra i risultati attesi, la sessione è scaduta: ripetere la ricerca dal punto 1.
+   `idElemento` è il GUID del PDF: URL diretto = `https://def.finanze.it/DocTribFrontend/getContent.do?id={idElemento}`.
+
+   **Batch successivo:** naviga a `https://def.finanze.it/DocTribFrontend/paginatorXml.do` — carica i prossimi 50 documenti e li aggiunge a `$risultati`. Riesegui il `javascript_tool` qui sopra per estrarre i nuovi 50.
+
+   **Attenzione:** la sessione è server-side. Se dopo la navigazione a `paginatorXml.do` la pagina non mostra risultati pertinenti, la sessione è scaduta: ripetere la ricerca (Caso A o B).
+
+   Segnalare all'utente quanti documenti totali esistono (variabile `totDocs` o "Documenti trovati: N") e chiedere prima di procedere al batch successivo, salvo richiesta esplicita di elencarli tutti.
 
 ### Passo 3 — Presenta la lista all'utente
 Mostra i risultati trovati con: tipo documento, numero, data, ente, oggetto/titolo.
@@ -184,8 +249,8 @@ Quando l'utente indica quale documento vuole:
 
 1. Ottieni l'URL del PDF:
    - **Fonte A**: usa l'href già annotato nel Passo 2 step 5. Se il browser non è più sulla pagina mensile, torna alla pagina mensile e riesegui la query `javascript_tool` del Passo 2 step 4 — **non eseguire il selettore su una pagina PDF già aperta**.
-   - **Fonte B**: naviga `getPrassiDetail.do?id={GUID}` e leggi `document.querySelector('a[href*="getContent.do"]').href`
-2. Costruisci l'URL cliccabile: prendi l'href del PDF e percent-encoda i caratteri `{` → `%7B` e `}` → `%7D` (necessario perché le graffe rompono il parser markdown). Es: `getContent.do?id={17FC0849}` → `getContent.do?id=%7B17FC0849%7D`. Chiama questo valore `[URL_ENCODED]`.
+   - **Fonte B**: usa l'`idElemento` già estratto al Passo 2 step 4. Solo se non disponibile (risultati letti esclusivamente via `get_page_text`), naviga `getPrassiDetail.do?id={idProvvedimento}` e leggi `document.querySelector('a[href*="getContent.do"]').href`
+2. Costruisci l'URL cliccabile: partendo dall'`idElemento` (es. `{17FC0849-...}`) o dall'href del PDF, percent-encoda i caratteri `{` → `%7B` e `}` → `%7D` (necessario perché le graffe rompono il parser markdown). Es: `https://def.finanze.it/DocTribFrontend/getContent.do?id=%7B17FC0849...%7D`. Chiama questo valore `[URL_ENCODED]`.
 
 3. Mostra all'utente il messaggio seguente (sostituendo `[TITOLO]` e `[URL_ENCODED]` con i valori reali):
 
