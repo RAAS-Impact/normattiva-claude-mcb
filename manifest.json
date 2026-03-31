@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "normattiva-mcp",
   "display_name": "Normattiva MCP Server",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Cerca e consulta la normativa italiana ufficiale: leggi, decreti e atti legislativi dalla banca dati Normattiva (dati.normattiva.it).",
   "long_description": "Server MCP che collega Claude alla banca dati ufficiale della normativa italiana consolidata (dati.normattiva.it). Permette di cercare leggi e decreti con ricerca libera o filtrata, recuperarne il testo consolidato vigente o storico, navigare articolo per articolo, esportare collezioni di atti e generare URI ELI permanenti. Include una skill complementare che guida Claude nella ricerca di prassi fiscale (interpelli, circolari, risoluzioni) sui portali dell'Agenzia delle Entrate e del Dipartimento delle Finanze tramite navigazione web.",
   "author": {
